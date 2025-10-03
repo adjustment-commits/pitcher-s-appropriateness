@@ -1,6 +1,6 @@
 {
   "name": "投手適性判定(Run)",
-  "short_name": "投手適正判定",
+  "short_name": "投手適正判定(Run)",
   "start_url": "index.html",
   "display": "standalone",
   "background_color": "#f5f5f5",
