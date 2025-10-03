@@ -1,1 +1,0 @@
-# pitcher-s-appropriateness

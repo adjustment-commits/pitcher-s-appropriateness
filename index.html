@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>投手適性チェック（完全版）</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#222222">
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("service-worker.js");
+    }
+  </script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 10px; background: #f5f5f5; }
+    h1 { text-align: center; font-size: 18px; }
+    .input-box { background: #fff; padding: 10px; border-radius: 8px; margin-bottom: 15px; }
+    label { display: block; margin-top: 5px; font-size: 14px; }
+    input { padding: 5px; margin-top: 2px; width: 100%; }
+    button { margin-top: 10px; padding: 8px 12px; width: 100%; font-size: 14px; }
+    #result, #history { margin-top: 15px; padding: 10px; background: #fff; border-radius: 8px; }
+    canvas { width: 100% !important; max-width: 100%; height: auto !important; }
+  </style>
+</head>
+<body>
+  <h1>投手適性チェック（完全版）</h1>
+
+  <div class="input-box">
+    <label>選手名: <input type="text" id="name" placeholder="例: 山田"></label>
+    <label>日付: <input type="date" id="date"></label>
+    <label>クーパー走距離 (m): <input type="number" id="cooper" placeholder="例: 2700"></label>
+    <label>Yo-Yo IR距離 (m): <input type="number" id="yoyo" placeholder="例: 1600"></label>
+    <label>10mスプリント (秒): <input type="number" step="0.01" id="s10" placeholder="例: 1.55"></label>
+    <label>30mスプリント (秒): <input type="number" step="0.01" id="s30" placeholder="例: 4.05"></label>
+    <label>50mスプリント (秒): <input type="number" step="0.01" id="s50" placeholder="例: 6.40"></label>
+    <button onclick="check()">判定して履歴に追加</button>
+  </div>
+
+  <div id="result"></div>
+  <div id="history"><h2>履歴</h2><ul id="historyList"></ul></div>
+  <canvas id="map"></canvas>
+
+  <script>
+    // VO2max換算
+    function cooperToVO2max(dist) {
+      return (dist - 504.9) / 44.73;
+    }
+    function yoyoToVO2max(dist) {
+      return dist * 0.0084 + 36.4;
+    }
+
+    // 色分け
+    function getRoleColor(vo2, sprintScore) {
+      if (vo2 >= 51 && sprintScore >= 3) return {role:"◎ エース格", color:"gold"};
+      if (vo2 >= 51 && sprintScore < 3) return {role:"ロング先発", color:"blue"};
+      if (vo2 >= 47 && vo2 < 51 && sprintScore >= 2) return {role:"中継ぎ", color:"green"};
+      if (vo2 < 47 && sprintScore >= 2) return {role:"抑え／ショート", color:"red"};
+      return {role:"基礎不足", color:"gray"};
+    }
+
+    // Chart.js初期化
+    const ctx = document.getElementById('map').getContext('2d');
+    const chart = new Chart(ctx, {
+      type: 'scatter',
+      data: { datasets: [] },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { display: false },
+          tooltip: {
+            callbacks: {
+              label: function(context) {
+                const p = context.raw;
+                return `${p.name} (${p.date}) ${p.role} VO₂:${p.x.toFixed(1)}, Sprint:${p.y}`;
+              }
+            }
+          }
+        },
+        scales: {
+          x: { title: { display: true, text: 'VO₂max (ml/kg/min)' }, min: 35, max: 60 },
+          y: { title: { display: true, text: 'スプリントスコア (0〜4)' }, min: 0, max: 4 }
+        }
+      }
+    });
+
+    // 履歴表示
+    function loadHistory() {
+      const list = document.getElementById("historyList");
+      list.innerHTML = "";
+      const data = JSON.parse(localStorage.getItem("history") || "[]");
+      data.forEach(item => {
+        const li = document.createElement("li");
+        li.textContent = `${item.date} ${item.name} → ${item.role} (VO₂:${item.vo2.toFixed(1)}, Sprint:${item.sprint})`;
+        list.appendChild(li);
+      });
+    }
+
+    // 判定実行
+    function check() {
+      const name = document.getElementById("name").value || "無名";
+      const date = document.getElementById("date").value || new Date().toISOString().slice(0,10);
+      const cooper = parseFloat(document.getElementById("cooper").value);
+      const yoyo = parseFloat(document.getElementById("yoyo").value);
+      const s10 = parseFloat(document.getElementById("s10").value);
+      const s30 = parseFloat(document.getElementById("s30").value);
+      const s50 = parseFloat(document.getElementById("s50").value);
+
+      if (isNaN(cooper) && isNaN(yoyo)) {
+        alert("クーパー走またはYo-Yoを入力してください");
+        return;
+      }
+
+      let vo2list = [];
+      if (!isNaN(cooper)) vo2list.push(cooperToVO2max(cooper));
+      if (!isNaN(yoyo)) vo2list.push(yoyoToVO2max(yoyo));
+      const vo2avg = vo2list.reduce((a,b)=>a+b,0) / vo2list.length;
+
+      // スプリントスコア
+      let sprintScore = 0;
+      if (!isNaN(s10) && s10 <= 1.55) sprintScore += 2;
+      if (!isNaN(s30) && s30 <= 4.0) sprintScore += 1;
+      if (!isNaN(s50) && s50 <= 6.4) sprintScore += 1;
+
+      const {role, color} = getRoleColor(vo2avg, sprintScore);
+
+      // 結果表示
+      document.getElementById("result").innerHTML = `
+        <h2>判定結果</h2>
+        <p>${date} ${name}</p>
+        <p>VO₂max：${vo2avg.toFixed(1)} ml/kg/min</p>
+        <p>スプリントスコア：${sprintScore}/4</p>
+        <p><strong>${role}</strong></p>
+      `;
+
+      // グラフに追加
+      chart.data.datasets.push({
+        label: name,
+        data: [{x: vo2avg, y: sprintScore, name: name, date: date, role: role}],
+        backgroundColor: color,
+        pointRadius: 6
+      });
+      chart.update();
+
+      // 履歴保存
+      const history = JSON.parse(localStorage.getItem("history") || "[]");
+      history.push({date: date, name: name, vo2: vo2avg, sprint: sprintScore, role: role});
+      localStorage.setItem("history", JSON.stringify(history));
+      loadHistory();
+    }
+
+    // 初期表示
+    loadHistory();
+  </script>
+</body>
+</html>
