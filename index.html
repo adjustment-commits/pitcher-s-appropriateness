@@ -2,29 +2,23 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <title>投手適性チェック（完全版）</title>
+  <title>投手適性判定（Run）</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="manifest" href="manifest.json">
-  <meta name="theme-color" content="#222222">
-  <script>
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("service-worker.js");
-    }
-  </script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body { font-family: system-ui, sans-serif; margin: 10px; background: #f5f5f5; }
-    h1 { text-align: center; font-size: 18px; }
-    .input-box { background: #fff; padding: 10px; border-radius: 8px; margin-bottom: 15px; }
-    label { display: block; margin-top: 5px; font-size: 14px; }
-    input { padding: 5px; margin-top: 2px; width: 100%; }
-    button { margin-top: 10px; padding: 8px 12px; width: 100%; font-size: 14px; }
+    h1 { text-align: center; font-size: 20px; }
+    .input-box { background: #fff; padding: 12px; border-radius: 8px; margin-bottom: 15px; }
+    label { display: block; margin-top: 8px; font-size: 14px; }
+    input { padding: 5px; margin-top: 3px; width: 100%; }
+    button { margin-top: 12px; padding: 8px; font-size: 13px; }
     #result, #history { margin-top: 15px; padding: 10px; background: #fff; border-radius: 8px; }
     canvas { width: 100% !important; max-width: 100%; height: auto !important; }
+    .delBtn { margin-left: 10px; font-size: 12px; padding: 2px 6px; }
   </style>
 </head>
 <body>
-  <h1>投手適性チェック（完全版）</h1>
+  <h1>投手適性判定(Run)</h1>
 
   <div class="input-box">
     <label>選手名: <input type="text" id="name" placeholder="例: 山田"></label>
@@ -38,19 +32,20 @@
   </div>
 
   <div id="result"></div>
-  <div id="history"><h2>履歴</h2><ul id="historyList"></ul></div>
+  <div id="history">
+    <h2>履歴</h2>
+    <ul id="historyList"></ul>
+    <button onclick="clearHistory()">履歴をすべて削除</button>
+  </div>
+
   <canvas id="map"></canvas>
 
   <script>
-    // VO2max換算
-    function cooperToVO2max(dist) {
-      return (dist - 504.9) / 44.73;
-    }
-    function yoyoToVO2max(dist) {
-      return dist * 0.0084 + 36.4;
-    }
+    // VO2max換算式
+    function cooperToVO2max(dist) { return (dist - 504.9) / 44.73; }
+    function yoyoToVO2max(dist) { return dist * 0.0084 + 36.4; }
 
-    // 色分け
+    // 色分けルール
     function getRoleColor(vo2, sprintScore) {
       if (vo2 >= 51 && sprintScore >= 3) return {role:"◎ エース格", color:"gold"};
       if (vo2 >= 51 && sprintScore < 3) return {role:"ロング先発", color:"blue"};
@@ -59,7 +54,7 @@
       return {role:"基礎不足", color:"gray"};
     }
 
-    // Chart.js初期化
+    // グラフ初期化
     const ctx = document.getElementById('map').getContext('2d');
     const chart = new Chart(ctx, {
       type: 'scatter',
@@ -72,7 +67,7 @@
             callbacks: {
               label: function(context) {
                 const p = context.raw;
-                return `${p.name} (${p.date}) ${p.role} VO₂:${p.x.toFixed(1)}, Sprint:${p.y}`;
+                return `${p.date} ${p.name} → ${p.role} (VO₂:${p.x.toFixed(1)}, Sprint:${p.y})`;
               }
             }
           }
@@ -84,19 +79,51 @@
       }
     });
 
-    // 履歴表示
+    // 履歴ロード
     function loadHistory() {
       const list = document.getElementById("historyList");
       list.innerHTML = "";
       const data = JSON.parse(localStorage.getItem("history") || "[]");
-      data.forEach(item => {
+
+      // グラフリセット
+      chart.data.datasets = [];
+
+      data.forEach((item, index) => {
         const li = document.createElement("li");
         li.textContent = `${item.date} ${item.name} → ${item.role} (VO₂:${item.vo2.toFixed(1)}, Sprint:${item.sprint})`;
+
+        // 個別削除ボタン
+        const delBtn = document.createElement("button");
+        delBtn.textContent = "削除";
+        delBtn.className = "delBtn";
+        delBtn.onclick = () => {
+          data.splice(index,1); 
+          localStorage.setItem("history", JSON.stringify(data));
+          loadHistory();
+        };
+        li.appendChild(delBtn);
         list.appendChild(li);
+
+        // グラフに描画
+        chart.data.datasets.push({
+          label: item.name,
+          data: [{x: item.vo2, y: item.sprint, name: item.name, date: item.date, role: item.role}],
+          backgroundColor: item.color,
+          pointRadius: 6
+        });
       });
+      chart.update();
     }
 
-    // 判定実行
+    // 履歴全削除
+    function clearHistory() {
+      if (confirm("履歴をすべて削除しますか？")) {
+        localStorage.removeItem("history");
+        loadHistory();
+      }
+    }
+
+    // 判定処理
     function check() {
       const name = document.getElementById("name").value || "無名";
       const date = document.getElementById("date").value || new Date().toISOString().slice(0,10);
@@ -133,23 +160,14 @@
         <p><strong>${role}</strong></p>
       `;
 
-      // グラフに追加
-      chart.data.datasets.push({
-        label: name,
-        data: [{x: vo2avg, y: sprintScore, name: name, date: date, role: role}],
-        backgroundColor: color,
-        pointRadius: 6
-      });
-      chart.update();
-
-      // 履歴保存
+      // 保存
       const history = JSON.parse(localStorage.getItem("history") || "[]");
-      history.push({date: date, name: name, vo2: vo2avg, sprint: sprintScore, role: role});
+      history.push({date: date, name: name, vo2: vo2avg, sprint: sprintScore, role: role, color: color});
       localStorage.setItem("history", JSON.stringify(history));
       loadHistory();
     }
 
-    // 初期表示
+    // 初期ロード
     loadHistory();
   </script>
 </body>
