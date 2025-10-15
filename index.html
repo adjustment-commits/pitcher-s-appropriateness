@@ -40,6 +40,19 @@
     <label>50mスプリント (秒): <input type="number" step="0.01" id="s50" placeholder="例: 6.40"></label>
     <button onclick="check()">判定して履歴に追加</button>
   </div>
+    <!-- ▼ VO₂max関連リンクを右上配置 -->
+  <div style="position: absolute; top: 15px; right: 15px; text-align: right;">
+    <p style="color:#555; font-size:13px; margin:0 0 4px;">Running fitnessから適正役割を参考</p>
+    <a href="https://adjustment-commits.github.io/pitcher-vo2max-lite/"
+       style="display:inline-block; margin:2px; padding:6px 10px; border-radius:6px; background:#2563eb; color:#fff; text-decoration:none; font-size:12px;">
+       📘 簡易版
+    </a>
+    <a href="https://adjustment-commits.github.io/pitcher-vo2max/"
+       style="display:inline-block; margin:2px; padding:6px 10px; border-radius:6px; background:#0f172a; color:#f1f5f9; text-decoration:none; font-size:12px;">
+       📗 本格版
+    </a>
+  </div>
+  <!-- ▲ VO₂max関連リンクここまで -->
 
   <div id="result"></div>
   <div id="history">
@@ -182,24 +195,6 @@
   </script>
     <canvas id="map"></canvas>
 
-  <!-- ▼ VO₂max関連リンクを追加 -->
-  <div style="margin-top:40px; padding:16px; text-align:center; border-top:1px solid #ddd;">
-    <p style="color:#555; font-size:14px;">
-      VO₂maxの考え方や数値基準については以下を参照。<br>
-      Running fitnessから適正役割を参考。
-    </p>
-
-    <a href="https://adjustment-commits.github.io/pitcher-vo2max-lite/" 
-       style="display:inline-block; margin:6px; padding:10px 18px; border-radius:8px; background:#2563eb; color:#fff; text-decoration:none;">
-       📘 簡易版（Lite）
-    </a>
-
-    <a href="https://adjustment-commits.github.io/pitcher-vo2max/"
-       style="display:inline-block; margin:6px; padding:10px 18px; border-radius:8px; background:#0f172a; color:#f1f5f9; text-decoration:none;">
-       📗 本格版（Flipbook）
-    </a>
-  </div>
-  <!-- ▲ VO₂max関連リンクここまで -->
     <div style="text-align:center; margin-top:20px; color:#888; font-size:12px;">
     ©️ 2025 adjustment-lab
   </div>
