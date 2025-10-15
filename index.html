@@ -17,7 +17,7 @@
 </script>
   <style>
     body { font-family: system-ui, sans-serif; margin: 10px; background: #f5f5f5; }
-    h1 { text-align: center; font-size: 20px; }
+    h1 { text-align: center; font-size: 20px; margin-top: 80px;}
     .input-box { background: #fff; padding: 12px; border-radius: 8px; margin-bottom: 15px; }
     label { display: block; margin-top: 8px; font-size: 14px; }
     input { padding: 5px; margin-top: 3px; width: 100%; }
@@ -28,6 +28,19 @@
   </style>
 </head>
 <body>
+   <!-- ▼ VO₂max関連リンク -->
+  <div style="position: absolute; top: 15px; right: 15px; text-align: right;">
+    <p style="color:#555; font-size:13px; margin:0 0 4px;">Running fitnessから適正役割を参考</p>
+    <a href="https://adjustment-commits.github.io/pitcher-running-fitness-2025-10/"
+       style="display:inline-block; margin:2px; padding:6px 10px; border-radius:6px; background:#2563eb; color:#fff; text-decoration:none; font-size:12px;">
+       📘 簡易版
+    </a>
+    <a href="https://adjustment-commits.github.io/pitcher-vo2max/"
+       style="display:inline-block; margin:2px; padding:6px 10px; border-radius:6px; background:#0f172a; color:#f1f5f9; text-decoration:none; font-size:12px;">
+       📗 本格版
+    </a>
+  </div>
+  
   <h1>投手適性判定(Run)</h1>
 
   <div class="input-box">
@@ -40,18 +53,7 @@
     <label>50mスプリント (秒): <input type="number" step="0.01" id="s50" placeholder="例: 6.40"></label>
     <button onclick="check()">判定して履歴に追加</button>
   </div>
-    <!-- ▼ VO₂max関連リンクを右上配置 -->
-  <div style="position: absolute; top: 15px; right: 15px; text-align: right;">
-    <p style="color:#555; font-size:13px; margin:0 0 4px;">Running fitnessから適正役割を参考</p>
-    <a href="https://adjustment-commits.github.io/pitcher-running-fitness-2025-10/"
-       style="display:inline-block; margin:2px; padding:6px 10px; border-radius:6px; background:#2563eb; color:#fff; text-decoration:none; font-size:12px;">
-       📘 簡易版
-    </a>
-    <a href="https://adjustment-commits.github.io/pitcher-vo2max/"
-       style="display:inline-block; margin:2px; padding:6px 10px; border-radius:6px; background:#0f172a; color:#f1f5f9; text-decoration:none; font-size:12px;">
-       📗 本格版
-    </a>
-  </div>
+   
   <!-- ▲ VO₂max関連リンクここまで -->
 
   <div id="result"></div>
